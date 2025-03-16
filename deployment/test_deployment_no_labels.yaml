@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sleep-no-labels
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sleep-no-labels
+  template:
+    metadata:
+      labels:
+        app: sleep-no-labels
+    spec:
+      containers:
+      - name: sleep
+        image: hmctspublic.azurecr.io/docker-curl
+        command: ["sleep","1d"]
+        imagePullPolicy: Always 

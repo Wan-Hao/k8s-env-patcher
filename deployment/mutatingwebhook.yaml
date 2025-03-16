@@ -1,0 +1,24 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: env-injector-webhook-cfg
+  labels:
+    app: env-injector
+webhooks:
+  - name: env-injector.wh.net
+    admissionReviewVersions: [v1beta1, v1]
+    sideEffects: NoneOnDryRun
+    clientConfig:
+      service:
+        name: env-injector-webhook-svc
+        namespace: admin
+        path: "/mutate"
+      caBundle: ${CA_BUNDLE}
+    rules:
+      - operations: [ "CREATE" ]
+        apiGroups: [""]
+        apiVersions: ["v1"]
+        resources: ["pods"]
+    namespaceSelector:
+      matchLabels:
+        wh/envInjector: enabled

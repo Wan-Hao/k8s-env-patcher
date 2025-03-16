@@ -1,0 +1,32 @@
+# Binaries for programs and plugins
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Application binary
+k8s-env-injector
+
+# Test binary, build with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+vendor/*
+
+.idea
+.DS_store
+*.iml
+
+# Ignore all files in the env-injector-webhook directory
+env-injector-webhook/*
+
+env-injector-azure-pipelines-image-publish.yaml
+env-injector-azure-pipelines.yaml
+k8s-env-injector-build.yaml
+
+image/test
+
+
+README.md
