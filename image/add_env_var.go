@@ -9,6 +9,12 @@ import (
 // resource
 func addEnv(target, envVars []corev1.EnvVar, basePath string) (patch []patchOperation) {
 	first := len(target) == 0
+	if first {
+		structuredLog(LogLevelDebug, "EnvVars", "No existing environment variables found, will create new array")
+	} else {
+		structuredLog(LogLevelDebug, "EnvVars", "Found %d existing environment variables", len(target))
+	}
+
 	var value interface{}
 	for _, envVar := range envVars {
 		value = envVar
@@ -19,8 +25,8 @@ func addEnv(target, envVars []corev1.EnvVar, basePath string) (patch []patchOper
 			first = false
 			op = "add"
 			value = []corev1.EnvVar{envVar}
+			structuredLog(LogLevelDebug, "EnvVars", "Adding first environment variable: %s", envVar.Name)
 		} else {
-
 			optExists := false
 			for idx, targetOpt := range target {
 				nameEqual := cmp.Equal(targetOpt.Name, envVar.Name)
@@ -30,11 +36,17 @@ func addEnv(target, envVars []corev1.EnvVar, basePath string) (patch []patchOper
 					valueFromEqual := cmp.Equal(targetOpt.ValueFrom, envVar.ValueFrom)
 
 					skip, op, path = checkReplaceOrSkip(idx, path, valueEqual, valueFromEqual)
+					if !skip {
+						structuredLog(LogLevelInfo, "EnvVars", "Updating existing environment variable at index %d: %s", idx, envVar.Name)
+					} else {
+						structuredLog(LogLevelDebug, "EnvVars", "Skipping environment variable update at index %d: %s (no changes needed)", idx, envVar.Name)
+					}
 				}
 			}
 			if !optExists {
 				op = "add"
 				path = path + "/-"
+				structuredLog(LogLevelInfo, "EnvVars", "Adding new environment variable: %s", envVar.Name)
 			}
 		}
 		if !skip {

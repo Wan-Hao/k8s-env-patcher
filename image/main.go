@@ -9,8 +9,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-
-	"github.com/golang/glog"
 )
 
 func main() {
@@ -25,7 +23,8 @@ func main() {
 
 	envConfig, err := loadConfig(parameters.envCfgFile)
 	if err != nil {
-		glog.Errorf("Error loading configuration: %v", err)
+		structuredLog(LogLevelError, "Main", "加载配置文件失败: %v", err)
+		os.Exit(1)
 	}
 
 	whsvr := &WebhookServer{
@@ -36,7 +35,7 @@ func main() {
 				GetCertificate: func(clientHello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 					pair, err := tls.LoadX509KeyPair(parameters.certFile, parameters.keyFile)
 					if err != nil {
-						return nil, fmt.Errorf("Error loading key pair: %w", err)
+						return nil, fmt.Errorf("failed to load key pair: %w", err)
 					}
 
 					return &pair, nil
@@ -52,8 +51,10 @@ func main() {
 
 	// start webhook server in new rountine
 	go func() {
+		structuredLog(LogLevelInfo, "Main", "启动 webhook 服务器，监听端口 %v", parameters.port)
 		if err := whsvr.server.ListenAndServeTLS("", ""); err != nil {
-			glog.Errorf("Filed to listen and serve env-injector-webhook server: %v", err)
+			structuredLog(LogLevelError, "Main", "启动 env-injector-webhook 服务器失败: %v", err)
+			os.Exit(1)
 		}
 	}()
 
@@ -62,6 +63,6 @@ func main() {
 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
 	<-signalChan
 
-	glog.Infof("Got OS shutdown signal, shutting down env-injector-webhook server...")
+	structuredLog(LogLevelInfo, "Main", "收到系统关闭信号，正在关闭 env-injector-webhook 服务器...")
 	whsvr.server.Shutdown(context.Background())
 }

@@ -9,6 +9,12 @@ import (
 // resource
 func addDnsOptions(target, dnsOptions []corev1.PodDNSConfigOption, basePath string) (patch []patchOperation) {
 	first := len(target) == 0
+	if first {
+		structuredLog(LogLevelDebug, "DNSOptions", "No existing DNS options found, will create new array")
+	} else {
+		structuredLog(LogLevelDebug, "DNSOptions", "Found %d existing DNS options", len(target))
+	}
+
 	var value interface{}
 	for _, dnsOpt := range dnsOptions {
 		value = dnsOpt
@@ -19,6 +25,7 @@ func addDnsOptions(target, dnsOptions []corev1.PodDNSConfigOption, basePath stri
 			first = false
 			op = "add"
 			value = []corev1.PodDNSConfigOption{dnsOpt}
+			structuredLog(LogLevelDebug, "DNSOptions", "Adding first DNS option with name: %s", dnsOpt.Name)
 		} else {
 			optExists := false
 			for idx, targetOpt := range target {
@@ -28,11 +35,17 @@ func addDnsOptions(target, dnsOptions []corev1.PodDNSConfigOption, basePath stri
 					valueEqual := cmp.Equal(targetOpt.Value, dnsOpt.Value)
 
 					skip, op, path = checkReplaceOrSkip(idx, path, valueEqual)
+					if !skip {
+						structuredLog(LogLevelInfo, "DNSOptions", "Updating existing DNS option at index %d with name: %s", idx, dnsOpt.Name)
+					} else {
+						structuredLog(LogLevelDebug, "DNSOptions", "Skipping DNS option update at index %d with name: %s (no changes needed)", idx, dnsOpt.Name)
+					}
 				}
 			}
 			if !optExists {
 				op = "add"
 				path = path + "/-"
+				structuredLog(LogLevelInfo, "DNSOptions", "Adding new DNS option with name: %s", dnsOpt.Name)
 			}
 		}
 		if !skip {
