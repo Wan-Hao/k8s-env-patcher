@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/golang/glog"
 	v1 "k8s.io/api/admission/v1"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -71,7 +70,7 @@ func (whsvr *WebhookServer) mutate(ar *v1.AdmissionReview) *v1.AdmissionResponse
 	req := ar.Request
 	var pod corev1.Pod
 	if err := json.Unmarshal(req.Object.Raw, &pod); err != nil {
-		glog.Errorf("Could not unmarshal raw object: %v", err)
+		structuredLog(LogLevelError, "Webhook", "无法解析原始对象: %v", err)
 		return &v1.AdmissionResponse{
 			Result: &metav1.Status{
 				Message: err.Error(),
@@ -79,12 +78,12 @@ func (whsvr *WebhookServer) mutate(ar *v1.AdmissionReview) *v1.AdmissionResponse
 		}
 	}
 
-	glog.Infof("AdmissionReview for Kind=%v, Namespace=%v Name=%v (%v) UID=%v patchOperation=%v UserInfo=%v",
+	structuredLog(LogLevelInfo, "Webhook", "收到准入审查请求 Kind=%v, Namespace=%v Name=%v (%v) UID=%v Operation=%v UserInfo=%v",
 		req.Kind, req.Namespace, req.Name, pod.Name, req.UID, req.Operation, req.UserInfo)
 
 	// determine whether to perform mutation
 	if !mutationRequired(ignoredNamespaces, &pod.ObjectMeta, whsvr.envConfig) {
-		glog.Infof("Skipping mutation for %s/%s due to policy check", pod.Namespace, pod.Name)
+		structuredLog(LogLevelInfo, "Webhook", "根据策略检查跳过对 %s/%s 的变更", pod.Namespace, pod.Name)
 		return &v1.AdmissionResponse{
 			Allowed: true,
 		}
@@ -100,7 +99,7 @@ func (whsvr *WebhookServer) mutate(ar *v1.AdmissionReview) *v1.AdmissionResponse
 		}
 	}
 
-	glog.Infof("AdmissionResponse: patch=%v\n", string(patchBytes))
+	structuredLog(LogLevelDebug, "Webhook", "准入响应补丁内容: %s", string(patchBytes))
 	return &v1.AdmissionResponse{
 		Allowed: true,
 		Patch:   patchBytes,
@@ -120,7 +119,7 @@ func (whsvr *WebhookServer) serve(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if len(body) == 0 {
-		glog.Error("empty body")
+		structuredLog(LogLevelError, "Webhook", "请求体为空")
 		http.Error(w, "empty body", http.StatusBadRequest)
 		return
 	}
@@ -128,7 +127,7 @@ func (whsvr *WebhookServer) serve(w http.ResponseWriter, r *http.Request) {
 	// verify the content type is accurate
 	contentType := r.Header.Get("Content-Type")
 	if contentType != "application/json" {
-		glog.Errorf("Content-Type=%s, expect application/json", contentType)
+		structuredLog(LogLevelError, "Webhook", "Content-Type=%s, 期望 application/json", contentType)
 		http.Error(w, "invalid Content-Type, expect `application/json`", http.StatusUnsupportedMediaType)
 		return
 	}
@@ -136,7 +135,7 @@ func (whsvr *WebhookServer) serve(w http.ResponseWriter, r *http.Request) {
 	var admissionResponse *v1.AdmissionResponse
 	ar := v1.AdmissionReview{}
 	if _, _, err := deserializer.Decode(body, nil, &ar); err != nil {
-		glog.Errorf("Can't decode body: %v", err)
+		structuredLog(LogLevelError, "Webhook", "无法解码请求体: %v", err)
 		admissionResponse = &v1.AdmissionResponse{
 			Result: &metav1.Status{
 				Message: err.Error(),
@@ -156,12 +155,12 @@ func (whsvr *WebhookServer) serve(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := json.Marshal(admissionReview)
 	if err != nil {
-		glog.Errorf("Can't encode response: %v", err)
+		structuredLog(LogLevelError, "Webhook", "无法编码响应: %v", err)
 		http.Error(w, fmt.Sprintf("could not encode response: %v", err), http.StatusInternalServerError)
 	}
-	glog.Infof("Ready to write reponse ...")
+	structuredLog(LogLevelInfo, "Webhook", "准备写入响应...")
 	if _, err := w.Write(resp); err != nil {
-		glog.Errorf("Can't write response: %v", err)
+		structuredLog(LogLevelError, "Webhook", "无法写入响应: %v", err)
 		http.Error(w, fmt.Sprintf("could not write response: %v", err), http.StatusInternalServerError)
 	}
 }
