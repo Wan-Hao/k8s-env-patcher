@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sleep-wrong-type
+  name: sleep
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: sleep-wrong-type
+      app: sleep
   template:
     metadata:
       labels:
-        app: sleep-wrong-type
+        app: sleep
         inject-env: "true"
-        app-type: "other"
+        app-type: "web"
     spec:
       containers:
       - name: sleep
-        image: hmctspublic.azurecr.io/docker-curl
+        image: busybox
         command: ["sleep","1d"]
-        imagePullPolicy: Always 
+        imagePullPolicy: IfNotPresent 
