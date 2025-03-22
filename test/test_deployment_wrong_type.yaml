@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sleep-wrong-type
+  labels:
+    app: sleep-wrong-type
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sleep-wrong-type
+  template:
+    metadata:
+      labels:
+        app: sleep-wrong-type
+        inject-env: "true"
+        app-type: "other"  # 使用不匹配的 app-type
+    spec:
+      containers:
+      - name: sleep
+        image: busybox
+        command: ['sh', '-c', 'while true; do sleep 3600; done'] 

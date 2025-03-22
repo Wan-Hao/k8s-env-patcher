@@ -14,6 +14,6 @@ spec:
     spec:
       containers:
       - name: sleep
-        image: hmctspublic.azurecr.io/docker-curl
+        image: busybox
         command: ["sleep","1d"]
-        imagePullPolicy: Always 
+        imagePullPolicy: IfNotPresent 

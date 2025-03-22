@@ -26,7 +26,4 @@ env-injector-azure-pipelines-image-publish.yaml
 env-injector-azure-pipelines.yaml
 k8s-env-injector-build.yaml
 
-image/test
-
-
-README.md
+README.sample.md
